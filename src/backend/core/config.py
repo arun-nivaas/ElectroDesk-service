@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="", description="Secret key for JWT")
     ALGORITHM: str = Field(default="HS256", description="Algorithm for JWT")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Access token expiration time in minutes")
-    DATABASE_URL: str = Field(default="./shop.db", description="Database URL")
+    DATABASE_URL: str = Field(default="", description="Database URL")
 
     #Store name
     STORE_NAME: str = Field(default="", description="Name of the store")

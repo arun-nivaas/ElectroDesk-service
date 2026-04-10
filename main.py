@@ -8,6 +8,10 @@ from src.backend.core.logger import logger
 from src.backend.core.constants import constant
 from typing import Dict, Any
 from src.backend.database import Base, engine
+from contextlib import asynccontextmanager
+import asyncio
+import httpx
+import os
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -16,12 +20,35 @@ Base.metadata.create_all(bind=engine)
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
 
+RENDER_URL = os.getenv("RENDER_URL", "")
+
+async def keep_alive():
+    """Pings the app every 10 minutes to prevent Render sleep"""
+    await asyncio.sleep(60)  # wait 1 minute after startup first
+    while True:
+        try:
+            if RENDER_URL:
+                async with httpx.AsyncClient() as client:
+                    await client.get(f"{RENDER_URL}/health")
+                    print(f"Keep alive ping sent to {RENDER_URL}/health")
+        except Exception as e:
+            print(f"Keep alive ping failed: {e}")
+        await asyncio.sleep(600)  # ping every 10 minutes
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(keep_alive())
+    yield
+    task.cancel()
+
 
 app = FastAPI(
     title=f"{constant.APP_TITLE} API",
     version=constant.API_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 
