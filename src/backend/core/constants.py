@@ -3,7 +3,7 @@ from typing import Final
 class Constant:
   
     # Application Settings
-    APP_TITLE = "VocaB-billing-service"
+    APP_TITLE = "ElectroDesk"
     APP_VERSION: Final[str] = "1.0.0"
     API_VERSION: Final[str] = "v1"
     API_PREFIX = f"/api/{API_VERSION}"

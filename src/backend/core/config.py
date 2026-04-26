@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = Field(default="HS256", description="Algorithm for JWT")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Access token expiration time in minutes")
     DATABASE_URL: str = Field(default="", description="Database URL")
+    RENDER_URL: str = Field(default="", description="Render URL for keep-alive pings")
 
     #Store name
     STORE_NAME: str = Field(default="", description="Name of the store")
