@@ -2,7 +2,7 @@ import logging
 import sys
 import colorlog
 
-logger = logging.getLogger("Innovites Cable Design Validation System")
+logger = logging.getLogger("ElectroDesk-Logger")
 
 if not logger.handlers: 
     logger.setLevel(logging.DEBUG)

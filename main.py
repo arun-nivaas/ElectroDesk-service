@@ -1,44 +1,21 @@
 from fastapi import FastAPI,status
 from fastapi.middleware.cors import CORSMiddleware
 from src.backend.api.v1.router import v1_router
-import uvicorn
-from dotenv import load_dotenv
-from pathlib import Path
 from src.backend.core.logger import logger
 from src.backend.core.constants import constant
 from typing import Dict, Any
-from src.backend.database import Base, engine
+from src.backend.database.init_db import init_db
+from src.backend.scheduler.keep_alive import KeepAlive
+from src.backend.core.config import Settings
 from contextlib import asynccontextmanager
+import uvicorn
 import asyncio
-import httpx
-import os
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
-# Load environment variables
-ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=ENV_PATH)
-
-RENDER_URL = os.getenv("RENDER_URL", "")
-
-async def keep_alive():
-    """Pings the app every 10 minutes to prevent Render sleep"""
-    await asyncio.sleep(60)  # wait 1 minute after startup first
-    while True:
-        try:
-            if RENDER_URL:
-                async with httpx.AsyncClient() as client:
-                    await client.get(f"{RENDER_URL}/health")
-                    print(f"Keep alive ping sent to {RENDER_URL}/health")
-        except Exception as e:
-            print(f"Keep alive ping failed: {e}")
-        await asyncio.sleep(600)  # ping every 10 minutes
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(keep_alive())
+    init_db()
+    keep_alive_service = KeepAlive(Settings.RENDER_URL)
+    task = asyncio.create_task(keep_alive_service.start())
     yield
     task.cancel()
 
@@ -50,7 +27,6 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
-
 
 app.add_middleware(
     CORSMiddleware,
