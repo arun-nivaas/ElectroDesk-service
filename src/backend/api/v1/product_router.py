@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from src.backend.database import get_db
+from src.backend.database.database import get_db
 from src.backend.schemas.product_schema import ProductCreate, ProductUpdate, ProductOut
 from src.backend.schemas.auth_schema import UserOut
 from src.backend.services import product_service

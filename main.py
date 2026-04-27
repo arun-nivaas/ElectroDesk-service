@@ -6,7 +6,7 @@ from src.backend.core.constants import constant
 from typing import Dict, Any
 from src.backend.database.init_db import init_db
 from src.backend.scheduler.keep_alive import KeepAlive
-from src.backend.core.config import Settings
+from src.backend.core.config import settings
 from contextlib import asynccontextmanager
 import uvicorn
 import asyncio
@@ -14,7 +14,7 @@ import asyncio
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    keep_alive_service = KeepAlive(Settings.RENDER_URL)
+    keep_alive_service = KeepAlive(settings.RENDER_URL)
     task = asyncio.create_task(keep_alive_service.start())
     yield
     task.cancel()
