@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from src.backend.database.database import get_db
+from src.backend.api.dependencies.product_dependency import get_product_repo
+from src.backend.interface.product_repo_interface import ProductRepository
 from src.backend.schemas.product_schema import ProductCreate, ProductUpdate, ProductOut
 from src.backend.schemas.auth_schema import UserOut
 from src.backend.services import product_service
@@ -14,20 +13,20 @@ router = APIRouter()
 @router.get("/", response_model=list[ProductOut])
 def search_products(
     query: str = "",
-    db: Session = Depends(get_db),
+    repo: ProductRepository = Depends(get_product_repo),
     current_user: UserOut = Depends(get_current_user)
 ):
-    return product_service.search_products(db, query)
+    return product_service.search_products(repo, query)
 
 
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(
     product_id: int,
-    db: Session = Depends(get_db),
+    repo: ProductRepository = Depends(get_product_repo),
     current_user: UserOut = Depends(get_current_user)
 ):
     try:
-        return product_service.get_product(db, product_id)
+        return product_service.get_product(repo, product_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -38,11 +37,11 @@ def get_product(
 @router.post("/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 def add_product(
     data: ProductCreate,
-    db: Session = Depends(get_db),
+    repo: ProductRepository = Depends(get_product_repo),
     current_user: UserOut = Depends(require_admin)
 ):
     try:
-        return product_service.add_product(db, data, current_user)
+        return product_service.add_product(repo, data, current_user)
     except PermissionError as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -54,11 +53,11 @@ def add_product(
 def edit_product(
     product_id: int,
     data: ProductUpdate,
-    db: Session = Depends(get_db),
+    repo: ProductRepository = Depends(get_product_repo),
     current_user: UserOut = Depends(require_admin)
 ):
     try:
-        return product_service.edit_product(db, product_id, data, current_user)
+        return product_service.edit_product(repo, product_id, data, current_user)
     except (ValueError, PermissionError) as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -69,11 +68,12 @@ def edit_product(
 @router.delete("/{product_id}")
 def remove_product(
     product_id: int,
-    db: Session = Depends(get_db),
+    repo: ProductRepository = Depends(get_product_repo),
     current_user: UserOut = Depends(require_admin)
 ):
+   
     try:
-        return product_service.remove_product(db, product_id, current_user)
+        return product_service.remove_product(repo, product_id, current_user)
     except (ValueError, PermissionError) as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

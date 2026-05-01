@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String,DateTime, func
+from sqlalchemy import Column, Integer, String,DateTime,func,Numeric
 from src.backend.database.database import Base
 
 class Product(Base):
@@ -9,7 +9,7 @@ class Product(Base):
     brand         = Column(String, nullable=False)
     specification = Column(String, nullable=True)
     unit          = Column(String, nullable=False)   # e.g. "per meter", "per piece"
-    price         = Column(Integer, nullable=False)
+    price         = Column(Numeric(precision=10, scale=2), nullable=False)
     category      = Column(String, nullable=True)    # e.g. "Wire", "Switch", "MCB"
     created_at    = Column(DateTime, server_default=func.now())
     updated_at    = Column(DateTime, server_default=func.now(), onupdate=func.now())

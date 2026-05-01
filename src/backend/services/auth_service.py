@@ -1,31 +1,24 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 import bcrypt
-from sqlalchemy.orm import Session
-from src.backend.schemas.auth_schema import  TokenResponse, UserOut
+from fastapi import HTTPException, status
+from src.backend.schemas.auth_schema import TokenResponse, UserOut
 from src.backend.core.config import settings
-from src.backend.repositeries import user_repo
-
-
-# ── Password validation ───────────────────────────────────
-
-def _validate_password_length(password: str):
-    if len(password.encode("utf-8")) > 72:
-        raise ValueError("Password must not exceed 72 characters")
+from src.backend.core.enums import UserRole
+from src.backend.interface.user_repo_interface import UserRepository
+from typing import Dict, Any
 
 
 # ── Password helpers ──────────────────────────────────────
 
 def hash_password(plain_password: str) -> str:
-    _validate_password_length(plain_password)
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(
         plain_password.encode("utf-8"), salt
     ).decode("utf-8")
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    _validate_password_length(plain_password)
+def verify_password(plain_password: str, hashed_password: Any) -> bool:
     return bcrypt.checkpw(
         plain_password.encode("utf-8"),
         hashed_password.encode("utf-8")
@@ -34,9 +27,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # ── JWT helpers ───────────────────────────────────────────
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: Dict[str, Any]) -> str:
     payload = data.copy()
-    expire = datetime.utcnow() + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     payload.update({"exp": expire})
@@ -47,7 +40,7 @@ def create_access_token(data: dict) -> str:
     )
 
 
-def decode_access_token(token: str) -> dict | None:
+def decode_access_token(token: str) -> Dict[str, Any]:
     try:
         return jwt.decode(
             token,
@@ -55,48 +48,56 @@ def decode_access_token(token: str) -> dict | None:
             algorithms=[settings.ALGORITHM]
         )
     except JWTError:
-        return None
-
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
 
 
 # ── Core auth logic ───────────────────────────────────────
 
-def login(db: Session, username: str, password: str) -> TokenResponse:
-    user = user_repo.get_user_by_username(db, username)
+def login(repo: UserRepository, username: str, password: str) -> TokenResponse:
+    user = repo.get_user_by_username(username)
 
     if not user or not verify_password(password, user.hashed_password):
-        raise ValueError("Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password"
+        )
 
     token = create_access_token(data={
         "sub": str(user.id),
         "username": user.username,
-        "role": user.role
+        "role": user.role.value
     })
 
     return TokenResponse(access_token=token)
 
 
-def get_current_user(db: Session, token: str) -> UserOut:
+def get_current_user(repo: UserRepository, token: str) -> UserOut:
     payload = decode_access_token(token)
 
-    if not payload:
-        raise ValueError("Invalid or expired token")
-
-    user = user_repo.get_user_by_id(db, int(payload["sub"]))
+    user = repo.get_user_by_id(int(payload["sub"]))
 
     if not user:
-        raise ValueError("User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
 
     return UserOut.model_validate(user)
 
 
-def register_user(db: Session, name: str, username: str, password: str, role: str = "viewer") -> UserOut:
-    existing = user_repo.get_user_by_username(db, username)
+def register_user(repo: UserRepository, name: str, username: str, password: str, role: UserRole = UserRole.USER) -> UserOut:
+    existing = repo.get_user_by_username(username)
 
     if existing:
-        raise ValueError("Username already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already exists"
+        )
 
     hashed = hash_password(password)
-    user = user_repo.create_user(db, name=name, username=username, hashed_password=hashed, role=role)
+    user = repo.create_user(name=name, username=username, hashed_password=hashed, role = role)
 
     return UserOut.model_validate(user)
