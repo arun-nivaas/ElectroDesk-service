@@ -58,9 +58,16 @@ def edit_product(
 ):
     try:
         return product_service.edit_product(repo, product_id, data, current_user)
-    except (ValueError, PermissionError) as e:
+    
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+    except PermissionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e)
         )
 
@@ -74,8 +81,14 @@ def remove_product(
    
     try:
         return product_service.remove_product(repo, product_id, current_user)
-    except (ValueError, PermissionError) as e:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+    except PermissionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e)
         )
