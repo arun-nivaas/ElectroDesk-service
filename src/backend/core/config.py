@@ -1,15 +1,28 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+import os
+from dotenv import load_dotenv
+
+APP_ENV = os.getenv("APP_ENV", "development")
+
+ENV_FILE_MAP = {
+    "development": ".env.dev",
+    "production": ".env",
+}
+
+load_dotenv(ENV_FILE_MAP.get(APP_ENV, ".env.dev"), override=True)
 
 class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
-        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
     )
-    
+
+    APP_ENV:str = Field(default="development", description="Environment (development or production)")
+    DEBUG: bool = Field(default=True, description="Debug mode")
+
     # Api Key
     API_KEY: str = Field(default="", description="API key")
 
@@ -31,3 +44,4 @@ class Settings(BaseSettings):
     LANGSMITH_TRACING_V2: bool = Field(default=False)
 
 settings = Settings()
+

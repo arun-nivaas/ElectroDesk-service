@@ -1,8 +1,9 @@
 import logging
 import sys
 import colorlog
+from src.backend.core.constants import constant
 
-logger = logging.getLogger("ElectroDesk-Logger")
+logger = logging.getLogger(constant.APP_TITLE + "-Logger")
 
 if not logger.handlers: 
     logger.setLevel(logging.DEBUG)

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-
-from src.backend.database.database import get_db
 from src.backend.schemas.auth_schema import TokenResponse, UserOut
 from src.backend.services import auth_service
+from src.backend.core.enums import UserRole
+from src.backend.api.dependencies.auth_dependency import get_user_repo
+from src.backend.interface.user_repo_interface import UserRepository
 
 router = APIRouter()
 
@@ -12,10 +12,10 @@ router = APIRouter()
 @router.post("/login", response_model=TokenResponse)
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    repo: UserRepository = Depends(get_user_repo)
 ):
     try:
-        return auth_service.login(db, form_data.username, form_data.password)
+        return auth_service.login(repo, form_data.username, form_data.password)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -28,11 +28,11 @@ def register(
     name: str,
     username: str,
     password: str,
-    role: str = "viewer",
-    db: Session = Depends(get_db)
+    role: UserRole = UserRole.USER,
+    repo: UserRepository = Depends(get_user_repo)
 ):
     try:
-        return auth_service.register_user(db, name, username, password, role)
+        return auth_service.register_user(repo, name, username, password, role)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

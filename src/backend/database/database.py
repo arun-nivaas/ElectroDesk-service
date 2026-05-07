@@ -1,11 +1,11 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from src.backend.core.config import settings
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = settings.DATABASE_URL
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set")
@@ -16,7 +16,8 @@ if db_url.startswith("postgres://"):
 
 engine = create_engine(
     db_url,
-    connect_args={"sslmode": "require"}
+    connect_args={"sslmode": "disable"},
+    echo = settings.DEBUG
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
