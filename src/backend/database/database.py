@@ -16,7 +16,8 @@ if db_url.startswith("postgres://"):
 
 engine = create_engine(
     db_url,
-    connect_args={"sslmode": "require"}
+    connect_args={"sslmode": "disable"},
+    echo = settings.DEBUG
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
